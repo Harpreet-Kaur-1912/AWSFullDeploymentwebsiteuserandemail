@@ -1,0 +1,53 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main  # Trigger the deployment when code is pushed to the main branch.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Define the environment (Ubuntu in this case)
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2  # Checkout the repository code
+    
+    # Deploy Static Website to S3
+    - name: Deploy to S3
+      uses: jakejarvis/s3-sync-action@v0.5.0
+      with:
+        source_dir: './'  # Path to your website files (can be a subfolder like ./website)
+        destination_bucket: 'my-dynamic-website'  # Replace with your S3 bucket name
+        acl: public-read
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+    
+    # Deploy Lambda Function
+    - name: Deploy Lambda Function
+      run: |
+        zip -r lambda_function.zip ./lambda_function  # Replace with your Lambda function code folder
+        aws lambda update-function-code \
+          --function-name processForm \
+          --zip-file fileb://lambda_function.zip \
+          --region ${{ secrets.AWS_REGION }}  # Set your Lambda region dynamically
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    # Optional: Create DynamoDB Table
+    - name: Create DynamoDB Table
+      run: |
+        aws dynamodb create-table \
+          --table-name Users \
+          --attribute-definitions AttributeName=email,AttributeType=S \
+          --key-schema AttributeName=email,KeyType=HASH \
+          --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+          --region ${{ secrets.AWS_REGION }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
