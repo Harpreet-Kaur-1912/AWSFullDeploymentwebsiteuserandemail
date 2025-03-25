@@ -28,7 +28,7 @@ jobs:
     # Deploy Lambda Function
     - name: Deploy Lambda Function
       run: |
-        zip -r lambda_function.zip ./lambda_function  # Replace with your Lambda function code folder
+        zip -r lambda_function.zip lambda_function.py  # Replace with your Lambda function code folder
         aws lambda update-function-code \
           --function-name processForm \
           --zip-file fileb://lambda_function.zip \
