@@ -17,7 +17,7 @@ jobs:
     - name: Deploy to S3
       uses: jakejarvis/s3-sync-action@v0.5.0
       with:
-        source_dir: 'website/'  # Path to your website files (can be a subfolder like ./website)
+        source_dir: 'website/'  # Path to your website files
         destination_bucket: 'myawsfulldeploy'  # Replace with your S3 bucket name
         acl: public-read
       env:
@@ -28,26 +28,30 @@ jobs:
     # Deploy Lambda Function
     - name: Deploy Lambda Function
       run: |
-        zip -r lambda_function.zip /lambda_function.py  # Replace with your Lambda function code folder
+        zip -r lambda_function.zip lambda_function.py  # Ensure the correct filename/folder
         aws lambda update-function-code \
           --function-name processForm \
           --zip-file fileb://lambda_function.zip \
-          --region ${{ secrets.AWS_REGION }} \
-          --publish # Set your Lambda region dynamically
+          --region $AWS_REGION \
+          --publish
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    # Optional: Create DynamoDB Table
-    - name: Create DynamoDB Table
+    # Ensure DynamoDB Table Exists Before Creating
+    - name: Ensure DynamoDB Table Exists
       run: |
-        aws dynamodb create-table \
-          --table-name Users \
-          --attribute-definitions AttributeName=email,AttributeType=S \
-          --key-schema AttributeName=email,KeyType=HASH \
-          --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-          --region ${{ secrets.AWS_REGION }}
+        if ! aws dynamodb describe-table --table-name Users --region $AWS_REGION > /dev/null 2>&1; then
+          aws dynamodb create-table \
+            --table-name Users \
+            --attribute-definitions AttributeName=email,AttributeType=S \
+            --key-schema AttributeName=email,KeyType=HASH \
+            --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+            --region $AWS_REGION
+        else
+          echo "DynamoDB table Users already exists. Skipping creation."
+        fi
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
