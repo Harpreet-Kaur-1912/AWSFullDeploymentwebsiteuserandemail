@@ -17,7 +17,7 @@ jobs:
     - name: Deploy to S3
       uses: jakejarvis/s3-sync-action@v0.5.0
       with:
-        source_dir: 'website/'  # Path to your website files
+        source_dir: './website'  # Path to your website files
         destination_bucket: 'myawsfulldeploy'  # Replace with your S3 bucket name
         acl: public-read
       env:
