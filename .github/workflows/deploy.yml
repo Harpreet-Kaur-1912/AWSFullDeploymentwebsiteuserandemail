@@ -18,7 +18,7 @@ jobs:
       uses: jakejarvis/s3-sync-action@v0.5.0
       with:
         source_dir: '/website'  # Path to your website files
-        destination_bucket:'myawsfulldeploy'  # Replace with your S3 bucket name
+        destination_bucket: 'myawsfulldeploy'  # Replace with your S3 bucket name
         acl: public-read
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
