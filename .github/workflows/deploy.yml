@@ -12,20 +12,23 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2  # Checkout the repository code
-    
-    # Deploy Static Website to S3
-    - name: Deploy to S3
-      uses: jakejarvis/s3-sync-action@v0.5.0
+
+    # ✅ Set up AWS Credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        source_dir: '/website'  # Path to your website files
-        destination_bucket: 'myawsfulldeploy'  # Replace with your S3 bucket name
-        acl: public-read
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    # ✅ Deploy Static Website to S3 using AWS CLI
+    - name: Deploy to S3
+      run: |
+        aws s3 sync ./website s3://myawsfulldeploy --acl public-read
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-    
-    # Deploy Lambda Function
+
+    # ✅ Deploy Lambda Function
     - name: Deploy Lambda Function
       run: |
         zip -r lambda_function.zip lambda_function.py  # Ensure the correct filename/folder
@@ -35,11 +38,9 @@ jobs:
           --region $AWS_REGION \
           --publish
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
 
-    # Ensure DynamoDB Table Exists Before Creating
+    # ✅ Ensure DynamoDB Table Exists
     - name: Ensure DynamoDB Table Exists
       run: |
         if ! aws dynamodb describe-table --table-name Users --region $AWS_REGION > /dev/null 2>&1; then
@@ -53,6 +54,4 @@ jobs:
           echo "DynamoDB table Users already exists. Skipping creation."
         fi
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
